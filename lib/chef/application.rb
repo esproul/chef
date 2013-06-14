@@ -70,6 +70,15 @@ class Chef::Application
   def configure_chef
     parse_options
 
+    # order of precedence for client_fork setting:
+    #   #1: command line --[no-]fork flag
+    #   #2: config file client_fork setting
+    #   #3: command line --daeomnize flag sets default client_fork behavior
+    #
+    unless Chef::Platform.windows? && config[:client_fork].nil?
+      Chef::Config[:client_fork] = config[:daemonize] ? true : false
+    end
+
     begin
       case config[:config_file]
       when /^(http|https):\/\//
@@ -175,7 +184,7 @@ class Chef::Application
   # Initializes Chef::Client instance and runs it
   def run_chef_client
     @chef_client = Chef::Client.new(
-      @chef_client_json, 
+      @chef_client_json,
       :override_runlist => config[:override_runlist]
     )
     @chef_client_json = nil
